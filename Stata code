@@ -1,0 +1,36 @@
+*(1) Within each academic year, keep ethnicity from Summer, then Spring, then Autumn censuses (as available)
+foreach x in 07 08 09 10 {
+	gen ethnicgroupminor_`x'=.
+	replace ethnicgroupminor_`x'=ethnicgroupminor_sum`x' if ethnicgroupminor_`x'==.
+	replace ethnicgroupminor_`x'=ethnicgroupminor_spr`x' if ethnicgroupminor_`x'==.
+	replace ethnicgroupminor_`x'=ethnicgroupminor_aut`x' if ethnicgroupminor_`x'==.
+	drop ethnicgroupminor_sum`x' ethnicgroupminor_spr`x' ethnicgroupminor_aut`x'
+}
+
+*(2) Create a proximity variable, containing the number of years between the Key Stage 4 assessment year and each school census year
+foreach x in 07 08 09 10 {
+		gen acadyr_ending_`x'=.
+		replace acadyr_ending_`x'=20`x'
+		gen proximity_`x' = acadyr_ending_`x' - ks4_acadyr if acadyr_ending_`x'!=. & ks4_acadyr!=.
+		drop acadyr_ending_`x'
+}
+
+*(3) Identify the timepoint at which ethnicity data is most recently available
+gen ethnicgroupminor_most_recent=.
+
+foreach x in 0 -1 -2 -3 {
+	foreach y 07 08 09 10 {
+		foreach z in ethnicgroupminor {
+			replace `z'_most_recent=`x' if proximity_`y'==`x' & `z'_most_recent==. & `z'_`y'!=.
+			}
+	}
+}
+
+*(4) Derive the overall ethnicity variable, taking ethnicity data from that most recently available timepoint
+gen ethnicgroupminor=.
+
+foreach x in 07 08 09 10 {
+	foreach y in ethnicgroupminor { 
+		replace `y'=`y'_`x' if `y'_most_recent==proximity_`x'
+	}
+}
